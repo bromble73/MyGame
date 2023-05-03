@@ -104,6 +104,7 @@ namespace StarterAssets
         private int _animIDMotionSpeed;
         private int _animIDDance;
         private int _animIDCrouch;
+        
 
 
 #if ENABLE_INPUT_SYSTEM 
@@ -201,7 +202,7 @@ namespace StarterAssets
             
         }
 
-        void FixedUpdate()
+        private void FixedUpdate()
         {
             Crouch();
         }
