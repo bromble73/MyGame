@@ -1,5 +1,6 @@
 ﻿ using Cinemachine;
  using UnityEngine;
+ using UnityEngine.UIElements;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
@@ -111,14 +112,19 @@ namespace StarterAssets
         
         private Vector3 lastDirection = Vector3.zero;
         
-        //Прицеливание
+        
+        [Header("Fight system")]
         [SerializeField] private CinemachineVirtualCamera _aimCam;
         [SerializeField] private LayerMask aimColliderLayerMask;
-        [SerializeField] private float normalSensitivity;
-        [SerializeField] private float aimSensitivity;
+        [SerializeField] private float normalSensitivity = 2f;
+        [SerializeField] private float aimSensitivity = 1f;
         [SerializeField] private Transform debugTransform;
+        public GameObject _aimDot;
+        
         private bool _rotateOnMove = true;
         public float sensitivity = 1f;
+
+        
 
 
 
@@ -169,6 +175,7 @@ namespace StarterAssets
 
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
+            
             _hasAnimator = TryGetComponent(out _animator);
             _controller = GetComponent<CharacterController>();
             _input = GetComponent<StarterAssetsInputs>();
@@ -195,12 +202,7 @@ namespace StarterAssets
             GroundedCheck();
             Move();
             Dance();
-            
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
 
-            
-            
         }
 
         private void FixedUpdate()
@@ -276,7 +278,7 @@ namespace StarterAssets
             {
                 targetSpeed = CrouchSpeed;
             }
-            else if (_input.sprint)
+            else if (_input.sprint && !_input.isAim)
             {
                 targetSpeed = SprintSpeed;
             }
@@ -532,6 +534,7 @@ namespace StarterAssets
                 SetSensitivity(aimSensitivity);
                 SetRotateOnMove(false);
                 _animator.SetBool(_animIDAim, true);
+                _aimDot.SetActive(true);
                 
                 _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
 
@@ -540,6 +543,7 @@ namespace StarterAssets
                 Vector3 aimDirection = (worldAimTarget - transform.position).normalized;
 
                 transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20f);
+                
             }
             else
             {
@@ -547,6 +551,7 @@ namespace StarterAssets
                 SetSensitivity(normalSensitivity);
                 SetRotateOnMove(true);
                 _animator.SetBool(_animIDAim, false);
+                _aimDot.SetActive(false);
 
                 _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
             }
@@ -556,6 +561,8 @@ namespace StarterAssets
                 _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
                 // Debug.Log("Боньк");
                 _animator.SetBool(_animIDAttack, true);
+                
+                _animator.SetTrigger("Attack trigger");
             }
             else
             {
