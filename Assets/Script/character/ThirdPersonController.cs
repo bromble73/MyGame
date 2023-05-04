@@ -196,13 +196,9 @@ namespace StarterAssets
             Move();
             Dance();
             
-            // float horizontal = Input.GetAxisRaw("Horizontal");
-            // float vertical = Input.GetAxisRaw("Vertical");
+            float horizontal = Input.GetAxisRaw("Horizontal");
+            float vertical = Input.GetAxisRaw("Vertical");
 
-            if (_controller.velocity.magnitude < 0.01f)
-            {
-                lastDirection = Vector3.zero;
-            }
             
             
         }
@@ -211,39 +207,28 @@ namespace StarterAssets
         {
             Crouch();
             
-            // Получаем ввод от игрока
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
-
-            // Рассчитываем направление движения персонажа
-            Vector3 moveDirection = new Vector3(horizontal, 0f, vertical).normalized;
-
-            // Рассчитываем текущую скорость персонажа
-            Vector3 currentVelocity = _controller.velocity;
-
-            // Рассчитываем текущее направление движения
-            Vector3 currentDirection = currentVelocity.normalized;
-
-            // Если персонаж не двигается, сбрасываем последнее направление движения на ноль
-            if (moveDirection == Vector3.zero)
-            {
-                lastDirection = Vector3.zero;
-            }
-
-            // Если текущее направление движения равно Vector3.zero и последнее направление движения не равно Vector3.zero, значит, что персонаж остановился
-            if (currentDirection == Vector3.zero && lastDirection != Vector3.zero)
-            {
-                lastDirection = Vector3.zero;
-            }
-
-            // Сохраняем текущее направление движения в lastDirection
-            lastDirection = currentDirection;
-    
+            
         }
 
         private void LateUpdate()
         {
             CameraRotation();
+            if (!input.move.Equals(Vector2.zero))
+                {
+                    // Ваш код для управления движением персонажа
+            
+                    // Сохраняем направление движения в переменную direction
+                    direction = movement != Vector3.zero ? movement.normalized : direction;
+                }
+                else
+                {
+                    // Проверяем, двигается ли персонаж в текущий момент, и только если он двигался в последний раз, сохраняем последнее направление движения.
+                    if (characterController.velocity.magnitude <= 0.02f && direction != Vector3.zero)
+                    {
+                        // Сбрасываем направление движения в ноль
+                        direction = Vector3.zero;
+                    }
+                }
         }
 
         private void AssignAnimationIDs()
