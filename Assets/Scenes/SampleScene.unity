@@ -407,7 +407,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1232622264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2266,6 +2266,7 @@ MonoBehaviour:
   normalSensitivity: 2
   aimSensitivity: 1
   debugTransform: {fileID: 0}
+  aimDot: {fileID: 1232622263}
   sensitivity: 1
 --- !u!143 &2418817172742581319
 CharacterController:
