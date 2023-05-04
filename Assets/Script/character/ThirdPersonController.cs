@@ -213,22 +213,6 @@ namespace StarterAssets
         private void LateUpdate()
         {
             CameraRotation();
-            if (!input.move.Equals(Vector2.zero))
-                {
-                    // Ваш код для управления движением персонажа
-            
-                    // Сохраняем направление движения в переменную direction
-                    direction = movement != Vector3.zero ? movement.normalized : direction;
-                }
-                else
-                {
-                    // Проверяем, двигается ли персонаж в текущий момент, и только если он двигался в последний раз, сохраняем последнее направление движения.
-                    if (characterController.velocity.magnitude <= 0.02f && direction != Vector3.zero)
-                    {
-                        // Сбрасываем направление движения в ноль
-                        direction = Vector3.zero;
-                    }
-                }
         }
 
         private void AssignAnimationIDs()
