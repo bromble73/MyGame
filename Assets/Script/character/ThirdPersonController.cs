@@ -1,4 +1,5 @@
-﻿ using Cinemachine;
+﻿ using System.Collections;
+ using Cinemachine;
  using UnityEngine;
  using UnityEngine.UIElements;
 #if ENABLE_INPUT_SYSTEM 
@@ -108,9 +109,8 @@ namespace StarterAssets
         private int _animIDDance;
         private int _animIDCrouch;
         private int _animIDAim;
-        private int _animIDAttack;
+        private int _animIDAttackingNow;
         
-        private Vector3 lastDirection = Vector3.zero;
         
         
         [Header("Fight system")]
@@ -119,7 +119,7 @@ namespace StarterAssets
         [SerializeField] private float normalSensitivity = 2f;
         [SerializeField] private float aimSensitivity = 1f;
         [SerializeField] private Transform debugTransform;
-        public GameObject _aimDot;
+        public GameObject aimDot;
         
         private bool _rotateOnMove = true;
         public float sensitivity = 1f;
@@ -229,7 +229,7 @@ namespace StarterAssets
             _yVelHash   = Animator.StringToHash("MoveY");
             _animIDCrouch = Animator.StringToHash("Crouch");
             _animIDAim = Animator.StringToHash("Aim");
-            _animIDAttack = Animator.StringToHash("Attack");
+            _animIDAttackingNow = Animator.StringToHash("AttackingNow");
 
         }
 
@@ -511,6 +511,8 @@ namespace StarterAssets
             _rotateOnMove = newRotateOnMove;
         }
 
+        
+        
         private void FightSystem()
         {
             var mouseWorldPosition = Vector3.zero;
@@ -534,10 +536,10 @@ namespace StarterAssets
                 SetSensitivity(aimSensitivity);
                 SetRotateOnMove(false);
                 _animator.SetBool(_animIDAim, true);
-                _aimDot.SetActive(true);
+                aimDot.SetActive(true);
                 
                 _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
-
+                
                 Vector3 worldAimTarget = mouseWorldPosition;
                 worldAimTarget.y = transform.position.y;
                 Vector3 aimDirection = (worldAimTarget - transform.position).normalized;
@@ -551,23 +553,36 @@ namespace StarterAssets
                 SetSensitivity(normalSensitivity);
                 SetRotateOnMove(true);
                 _animator.SetBool(_animIDAim, false);
-                _aimDot.SetActive(false);
+                aimDot.SetActive(false);
 
-                _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
+                // _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
             }
 
             if (_input.isFire && !_input.isAim)
             {
                 _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
-                // Debug.Log("Боньк");
-                _animator.SetBool(_animIDAttack, true);
+
+                if (!_animator.GetBool(_animIDAttackingNow))
+                {
+                    _animator.SetTrigger("Attack trigger");
+                    Debug.Log("Боньк");
+                }
                 
-                _animator.SetTrigger("Attack trigger");
+                
+                AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(1);
+                // StartCoroutine(FitnessCoroutine(stateInfo.length));
             }
             else
             {
-                _animator.SetBool(_animIDAttack, false);
             }
+        }
+
+
+        private IEnumerator FitnessCoroutine(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
+            // Debug.Log("Вот и всё, ребята");
         }
     }
 }
