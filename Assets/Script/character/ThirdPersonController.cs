@@ -1,4 +1,5 @@
-﻿ using UnityEngine;
+﻿ using Cinemachine;
+ using UnityEngine;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
@@ -78,6 +79,7 @@ namespace StarterAssets
         [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
 
+
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
@@ -104,7 +106,20 @@ namespace StarterAssets
         private int _animIDMotionSpeed;
         private int _animIDDance;
         private int _animIDCrouch;
+        private int _animIDAim;
+        private int _animIDAttack;
         
+        private Vector3 lastDirection = Vector3.zero;
+        
+        //Прицеливание
+        [SerializeField] private CinemachineVirtualCamera _aimCam;
+        [SerializeField] private LayerMask aimColliderLayerMask;
+        [SerializeField] private float normalSensitivity;
+        [SerializeField] private float aimSensitivity;
+        [SerializeField] private Transform debugTransform;
+        private bool _rotateOnMove = true;
+        public float sensitivity = 1f;
+
 
 
 #if ENABLE_INPUT_SYSTEM 
@@ -175,29 +190,19 @@ namespace StarterAssets
         {
             _hasAnimator = TryGetComponent(out _animator);
 
-            if (_input.dance)
-            {
-                if (_animator.GetBool(_animIDDance))
-                {
-                    _animator.SetBool(_animIDDance, false);
-                    
-                }
-                else
-                {
-                    _animator.SetBool(_animIDDance, true);
-                    
-                }
-                _input.dance = false;
-            }
-            
-            
+            FightSystem();
             JumpAndGravity();
             GroundedCheck();
             Move();
+            Dance();
             
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
+            // float horizontal = Input.GetAxisRaw("Horizontal");
+            // float vertical = Input.GetAxisRaw("Vertical");
 
+            if (_controller.velocity.magnitude < 0.01f)
+            {
+                lastDirection = Vector3.zero;
+            }
             
             
         }
@@ -205,6 +210,35 @@ namespace StarterAssets
         private void FixedUpdate()
         {
             Crouch();
+            
+            // Получаем ввод от игрока
+            float horizontal = Input.GetAxisRaw("Horizontal");
+            float vertical = Input.GetAxisRaw("Vertical");
+
+            // Рассчитываем направление движения персонажа
+            Vector3 moveDirection = new Vector3(horizontal, 0f, vertical).normalized;
+
+            // Рассчитываем текущую скорость персонажа
+            Vector3 currentVelocity = _controller.velocity;
+
+            // Рассчитываем текущее направление движения
+            Vector3 currentDirection = currentVelocity.normalized;
+
+            // Если персонаж не двигается, сбрасываем последнее направление движения на ноль
+            if (moveDirection == Vector3.zero)
+            {
+                lastDirection = Vector3.zero;
+            }
+
+            // Если текущее направление движения равно Vector3.zero и последнее направление движения не равно Vector3.zero, значит, что персонаж остановился
+            if (currentDirection == Vector3.zero && lastDirection != Vector3.zero)
+            {
+                lastDirection = Vector3.zero;
+            }
+
+            // Сохраняем текущее направление движения в lastDirection
+            lastDirection = currentDirection;
+    
         }
 
         private void LateUpdate()
@@ -223,6 +257,8 @@ namespace StarterAssets
             _xVelHash   = Animator.StringToHash("MoveX");
             _yVelHash   = Animator.StringToHash("MoveY");
             _animIDCrouch = Animator.StringToHash("Crouch");
+            _animIDAim = Animator.StringToHash("Aim");
+            _animIDAttack = Animator.StringToHash("Attack");
 
         }
 
@@ -249,8 +285,8 @@ namespace StarterAssets
                 //Don't multiply mouse input by Time.deltaTime;
                 float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
 
-                _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier;
-                _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
+                _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier * sensitivity;
+                _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier * sensitivity;
             }
 
             // clamp our rotations so our values are limited 360 degrees
@@ -474,6 +510,87 @@ namespace StarterAssets
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
+            }
+        }
+
+        private void Dance()
+        {
+            if (_input.dance)
+            {
+                if (_animator.GetBool(_animIDDance))
+                {
+                    _animator.SetBool(_animIDDance, false);
+                    
+                }
+                else
+                {
+                    _animator.SetBool(_animIDDance, true);
+                    
+                }
+                _input.dance = false;
+            }
+        }
+
+        public void SetSensitivity(float newSensitivity)
+        {
+            sensitivity = newSensitivity;
+        }
+        public void SetRotateOnMove(bool newRotateOnMove)
+        {
+            _rotateOnMove = newRotateOnMove;
+        }
+
+        private void FightSystem()
+        {
+            var mouseWorldPosition = Vector3.zero;
+            // var hitPoint = Vector3.zero;
+            var screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
+            var ray = Camera.main.ScreenPointToRay(screenCenterPoint);
+
+            // Transform hitTransform = null;
+
+            if (Physics.Raycast(ray, out RaycastHit raycastHit, 999f, aimColliderLayerMask))
+            {
+                // debugTransform.position = raycastHit.point;
+                mouseWorldPosition = raycastHit.point;
+                // hitPoint = raycastHit.point;
+                // hitTransform = raycastHit.transform;
+            }
+
+            if (_input.isAim)
+            {
+                _aimCam.gameObject.SetActive(true);
+                SetSensitivity(aimSensitivity);
+                SetRotateOnMove(false);
+                _animator.SetBool(_animIDAim, true);
+                
+                _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
+
+                Vector3 worldAimTarget = mouseWorldPosition;
+                worldAimTarget.y = transform.position.y;
+                Vector3 aimDirection = (worldAimTarget - transform.position).normalized;
+
+                transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20f);
+            }
+            else
+            {
+                _aimCam.gameObject.SetActive(false);
+                SetSensitivity(normalSensitivity);
+                SetRotateOnMove(true);
+                _animator.SetBool(_animIDAim, false);
+
+                _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
+            }
+
+            if (_input.isFire && !_input.isAim)
+            {
+                _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
+                // Debug.Log("Боньк");
+                _animator.SetBool(_animIDAttack, true);
+            }
+            else
+            {
+                _animator.SetBool(_animIDAttack, false);
             }
         }
     }

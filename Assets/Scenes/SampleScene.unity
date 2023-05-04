@@ -2082,6 +2082,14 @@ MonoBehaviour:
   BottomClamp: -30
   CameraAngleOverride: 0
   LockCameraPosition: 0
+  _aimCam: {fileID: 2084561001}
+  aimColliderLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  normalSensitivity: 1
+  aimSensitivity: 0.5
+  debugTransform: {fileID: 0}
+  sensitivity: 1
 --- !u!143 &2418817172742581319
 CharacterController:
   m_ObjectHideFlags: 0
@@ -4535,7 +4543,7 @@ MonoBehaviour:
   m_BlendUpdateMethod: 1
   m_DefaultBlend:
     m_Style: 1
-    m_Time: 2
+    m_Time: 0.45
     m_CustomCurve:
       serializedVersion: 2
       m_Curve: []
