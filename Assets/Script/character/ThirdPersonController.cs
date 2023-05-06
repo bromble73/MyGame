@@ -1,7 +1,10 @@
-﻿ using System.Collections;
+﻿ using System;
+ using System.Collections;
  using Cinemachine;
  using UnityEngine;
+ using UnityEngine.EventSystems;
  using UnityEngine.UIElements;
+ using Random = UnityEngine.Random;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
@@ -80,8 +83,9 @@ namespace StarterAssets
 
         [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
-
-
+        
+        
+        
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
@@ -111,7 +115,18 @@ namespace StarterAssets
         private int _animIDAim;
         private int _animIDAttackingNow;
         
-        
+        public enum State 
+        {
+            None,
+            Idle,
+            Move,
+            Dance,
+            Jump,
+            Crouch,
+            ReadyToFight
+        }
+
+        public State _currentState = State.None;
         
         [Header("Fight system")]
         [SerializeField] private CinemachineVirtualCamera _aimCam;
@@ -158,6 +173,7 @@ namespace StarterAssets
             }
         }
 
+        
 
         private void Awake()
         {
@@ -172,7 +188,8 @@ namespace StarterAssets
 
         private void Start()
         {
-
+            
+            
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
             
@@ -195,13 +212,37 @@ namespace StarterAssets
 
         private void Update()
         {
+
+            switch (_currentState)
+            {
+                case State.None:
+                    break;
+                case State.Idle:
+                    break;
+                case State.Move:
+                    break;
+                case State.Dance:
+                    break;
+                case State.Jump:
+                    break;
+                case State.Crouch:
+                    break;
+                case State.ReadyToFight:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            
             _hasAnimator = TryGetComponent(out _animator);
 
-            FightSystem();
+            // FightSystem();
             JumpAndGravity();
             GroundedCheck();
             Move();
-            Dance();
+            if (_input.dance)
+            {
+                Dance();
+            }
 
         }
 
@@ -483,11 +524,10 @@ namespace StarterAssets
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
             }
         }
-
+        
         private void Dance()
         {
-            if (_input.dance)
-            {
+            
                 if (_animator.GetBool(_animIDDance))
                 {
                     _animator.SetBool(_animIDDance, false);
@@ -502,87 +542,88 @@ namespace StarterAssets
             }
         }
 
-        public void SetSensitivity(float newSensitivity)
-        {
-            sensitivity = newSensitivity;
-        }
-        public void SetRotateOnMove(bool newRotateOnMove)
-        {
-            _rotateOnMove = newRotateOnMove;
-        }
+        // public void SetSensitivity(float newSensitivity)
+        // {
+        //     sensitivity = newSensitivity;
+        // }
+        // public void SetRotateOnMove(bool newRotateOnMove)
+        // {
+        //     _rotateOnMove = newRotateOnMove;
+        // }
 
         
         
-        private void FightSystem()
-        {
-            var mouseWorldPosition = Vector3.zero;
-            // var hitPoint = Vector3.zero;
-            var screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
-            var ray = Camera.main.ScreenPointToRay(screenCenterPoint);
+        // private void FightSystem()
+        // {
+            // var mouseWorldPosition = Vector3.zero;
+            // // var hitPoint = Vector3.zero;
+            // var screenCenterPoint = new Vector2(Screen.width / 2f, Screen.height / 2f);
+            // var ray = Camera.main.ScreenPointToRay(screenCenterPoint);
+            //
+            // // Transform hitTransform = null;
+            //
+            // if (Physics.Raycast(ray, out RaycastHit raycastHit, 999f, aimColliderLayerMask))
+            // {
+            //     // debugTransform.position = raycastHit.point;
+            //     mouseWorldPosition = raycastHit.point;
+            //     // hitPoint = raycastHit.point;
+            //     // hitTransform = raycastHit.transform;
+            // }
+            //
+            // if (_input.isAim)
+            // {
+            //     _aimCam.gameObject.SetActive(true);
+            //     SetSensitivity(aimSensitivity);
+            //     SetRotateOnMove(false);
+            //     _animator.SetBool(_animIDAim, true);
+            //     aimDot.SetActive(true);
+            //     
+            //     _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
+            //     
+            //     Vector3 worldAimTarget = mouseWorldPosition;
+            //     worldAimTarget.y = transform.position.y;
+            //     Vector3 aimDirection = (worldAimTarget - transform.position).normalized;
+            //
+            //     transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20f);
+            //     
+            // }
+            // else
+            // {
+            //     _aimCam.gameObject.SetActive(false);
+            //     SetSensitivity(normalSensitivity);
+            //     SetRotateOnMove(true);
+            //     _animator.SetBool(_animIDAim, false);
+            //     aimDot.SetActive(false);
+            //
+            //     // _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
+            // }
+            //
+            // if (_input.isFire && !_input.isAim)
+            // {
+            //     _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
+            //
+            //     if (!_animator.GetBool(_animIDAttackingNow))
+            //     {
+            //         _animator.SetTrigger("Attack trigger");
+            //         Debug.Log("Боньк");
+            //     }
+            //     
+            //     
+            //     AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(1);
+            //     // StartCoroutine(FitnessCoroutine(stateInfo.length));
+            // }
+            // else
+            // {
+            // }
+        // }
 
-            // Transform hitTransform = null;
 
-            if (Physics.Raycast(ray, out RaycastHit raycastHit, 999f, aimColliderLayerMask))
-            {
-                // debugTransform.position = raycastHit.point;
-                mouseWorldPosition = raycastHit.point;
-                // hitPoint = raycastHit.point;
-                // hitTransform = raycastHit.transform;
-            }
-
-            if (_input.isAim)
-            {
-                _aimCam.gameObject.SetActive(true);
-                SetSensitivity(aimSensitivity);
-                SetRotateOnMove(false);
-                _animator.SetBool(_animIDAim, true);
-                aimDot.SetActive(true);
-                
-                _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
-                
-                Vector3 worldAimTarget = mouseWorldPosition;
-                worldAimTarget.y = transform.position.y;
-                Vector3 aimDirection = (worldAimTarget - transform.position).normalized;
-
-                transform.forward = Vector3.Lerp(transform.forward, aimDirection, Time.deltaTime * 20f);
-                
-            }
-            else
-            {
-                _aimCam.gameObject.SetActive(false);
-                SetSensitivity(normalSensitivity);
-                SetRotateOnMove(true);
-                _animator.SetBool(_animIDAim, false);
-                aimDot.SetActive(false);
-
-                // _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
-            }
-
-            if (_input.isFire && !_input.isAim)
-            {
-                _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
-
-                if (!_animator.GetBool(_animIDAttackingNow))
-                {
-                    _animator.SetTrigger("Attack trigger");
-                    Debug.Log("Боньк");
-                }
-                
-                
-                AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(1);
-                // StartCoroutine(FitnessCoroutine(stateInfo.length));
-            }
-            else
-            {
-            }
-        }
-
-
-        private IEnumerator FitnessCoroutine(float delay)
-        {
-            yield return new WaitForSeconds(delay);
-            _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
-            // Debug.Log("Вот и всё, ребята");
-        }
+        // private IEnumerator FitnessCoroutine(float delay)
+        // {
+        //     yield return new WaitForSeconds(delay);
+        //     _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
+        //     // Debug.Log("Вот и всё, ребята");
+        // }
     }
-}
+ 
+
