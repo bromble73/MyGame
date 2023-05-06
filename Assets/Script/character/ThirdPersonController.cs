@@ -189,7 +189,7 @@ namespace StarterAssets
         private void Start()
         {
             
-            
+            _currentState = State.Idle;
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
             
@@ -217,40 +217,68 @@ namespace StarterAssets
             {
                 case State.None:
                     break;
+                
                 case State.Idle:
+                    Stopper();
                     break;
+                
                 case State.Move:
                     break;
+                
                 case State.Dance:
+                    Dance();
                     break;
+                
                 case State.Jump:
+                    JumpAndGravity();
                     break;
+                
                 case State.Crouch:
+                    Crouch();
                     break;
+                
                 case State.ReadyToFight:
                     break;
+                
                 default:
                     throw new ArgumentOutOfRangeException();
             }
             
+            Debug.LogError("_currentState is " + _currentState);
+            
             _hasAnimator = TryGetComponent(out _animator);
 
             // FightSystem();
-            JumpAndGravity();
             GroundedCheck();
             Move();
-            if (_input.dance)
+            // Dance();
+            // JumpAndGravity();
+            
+            if (_input.dance && _currentState == State.Idle)
             {
-                Dance();
+                _currentState = State.Dance;
+            }
+
+            if (_input.jump)
+            {                
+                _currentState = State.Jump;
             }
 
         }
 
+        private void Stopper()
+        {
+            _animator.SetBool(_animIDCrouch, false);
+            _animator.SetBool(_animIDDance, false);
+        }
+
         private void FixedUpdate()
         {
-            Crouch();
-            
-            
+            if (_input.crouch)
+            {
+                _currentState = State.Crouch;
+            }
+
         }
 
         private void LateUpdate()
@@ -407,10 +435,12 @@ namespace StarterAssets
             else if (_input.sprint)
             {
                 _animator.SetBool(_animIDCrouch, false);
+                _currentState = State.Move;
             }
             else
             {
                 _animator.SetBool(_animIDCrouch, false);
+                _currentState = State.Idle;
             }
 
         }
@@ -421,6 +451,7 @@ namespace StarterAssets
             {
                 // reset the fall timeout timer
                 _fallTimeoutDelta = FallTimeout;
+                Stopper();
 
                 // update animator if using character
                 if (_hasAnimator)
@@ -452,6 +483,10 @@ namespace StarterAssets
                 if (_jumpTimeoutDelta >= 0.0f)
                 {
                     _jumpTimeoutDelta -= Time.deltaTime;
+                }
+                else
+                {
+                    _currentState = State.Idle;
                 }
             }
             else
@@ -524,23 +559,25 @@ namespace StarterAssets
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
             }
         }
-        
+
         private void Dance()
         {
-            
+            if (_input.dance)
+            {
                 if (_animator.GetBool(_animIDDance))
                 {
                     _animator.SetBool(_animIDDance, false);
-                    
+                    _currentState = State.Idle;
                 }
                 else
                 {
                     _animator.SetBool(_animIDDance, true);
-                    
                 }
+
                 _input.dance = false;
             }
         }
+    }
 
         // public void SetSensitivity(float newSensitivity)
         // {
