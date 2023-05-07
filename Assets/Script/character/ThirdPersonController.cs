@@ -91,12 +91,12 @@ namespace StarterAssets
         private float _cinemachineTargetPitch;
 
         // player
-        private float _speed;
-        private float _animationBlend;
-        private float _targetRotation = 0.0f;
-        private float _rotationVelocity;
-        private float _verticalVelocity;
-        private float _terminalVelocity = 53.0f;
+        public float _speed;
+        public float _animationBlend;
+        public float _targetRotation = 0.0f;
+        public float _rotationVelocity;
+        public float _verticalVelocity;
+        public float _terminalVelocity = 53.0f;
 
         // timeout deltatime
         private float _jumpTimeoutDelta;
@@ -105,28 +105,29 @@ namespace StarterAssets
         
 
         // animation IDs
-        private int _animIDSpeed;
-        private int _animIDGrounded;
-        private int _animIDJump;
-        private int _animIDFreeFall;
-        private int _animIDMotionSpeed;
-        private int _animIDDance;
-        private int _animIDCrouch;
-        private int _animIDAim;
-        private int _animIDAttackingNow;
+        public int _animIDSpeed;
+        public int _animIDGrounded;
+        public int _animIDJump;
+        public int _animIDFreeFall;
+        public int _animIDMotionSpeed;
+        public int _animIDDance;
+        public int _animIDCrouch;
+        public int _animIDAim;
+        public int _animIDAttackingNow;
         
-        public enum State 
-        {
-            None,
-            Idle,
-            Move,
-            Dance,
-            Jump,
-            Crouch,
-            ReadyToFight
-        }
-
-        public State _currentState = State.None;
+        // public enum State 
+        // {
+        //     None,
+        //     Idle,
+        //     Move,
+        //     Sprint,
+        //     Dance,
+        //     Jump,
+        //     Crouch,
+        //     ReadyToFight
+        // }
+        //
+        // public State _currentState = State.None;
         
         [Header("Fight system")]
         [SerializeField] private CinemachineVirtualCamera _aimCam;
@@ -146,20 +147,22 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM 
         private PlayerInput _playerInput;
 #endif
-        private Animator _animator;
-        private CharacterController _controller;
-        private StarterAssetsInputs _input;
-        private GameObject _mainCamera;
+        public Animator animator;
+        public CharacterController controller;
+        public StarterAssetsInputs input;
+        public GameObject mainCamera;
 
         private const float _threshold = 0.01f;
 
-        private bool _hasAnimator;
+        public StateMachine stateMachine;
+
+        public bool _hasAnimator;
         float targetSpeed;
-        private float AnimationBlenderSpeed = 9f; // Скорость смешивания анимаций (_animationBlend работает не так как нужно в данной ситуации)
-        private int _xVelHash; // Значение движения по горизонтали 
-        private int _yVelHash; // Значение движения по вертикали 
-        private int _crouchHash; // Значение присяда
-        private Vector2 _currentVelocity; // Для аниматора
+        public float AnimationBlenderSpeed = 9f; // Скорость смешивания анимаций (_animationBlend работает не так как нужно в данной ситуации)
+        public int _xVelHash; // Значение движения по горизонтали 
+        public int _yVelHash; // Значение движения по вертикали 
+        public int _crouchHash; // Значение присяда
+        public Vector2 _currentVelocity; // Для аниматора
 
         private bool IsCurrentDeviceMouse
         {
@@ -178,9 +181,9 @@ namespace StarterAssets
         private void Awake()
         {
             // get a reference to our main camera
-            if (_mainCamera == null)
+            if (mainCamera == null)
             {
-                _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+                mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
             }
             
             
@@ -188,14 +191,16 @@ namespace StarterAssets
 
         private void Start()
         {
+            stateMachine = new StateMachine();
+            stateMachine.Initialize(new IdleState());
             
-            _currentState = State.Idle;
+            // _currentState = State.Idle;
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
             
-            _hasAnimator = TryGetComponent(out _animator);
-            _controller = GetComponent<CharacterController>();
-            _input = GetComponent<StarterAssetsInputs>();
+            _hasAnimator = TryGetComponent(out animator);
+            controller = GetComponent<CharacterController>();
+            input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM 
             _playerInput = GetComponent<PlayerInput>();
 #else
@@ -204,7 +209,7 @@ namespace StarterAssets
 
             AssignAnimationIDs();
             
-
+      
             // reset our timeouts on start
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
@@ -212,72 +217,94 @@ namespace StarterAssets
 
         private void Update()
         {
-
-            switch (_currentState)
-            {
-                case State.None:
-                    break;
-                
-                case State.Idle:
-                    Stopper();
-                    break;
-                
-                case State.Move:
-                    break;
-                
-                case State.Dance:
-                    Dance();
-                    break;
-                
-                case State.Jump:
-                    JumpAndGravity();
-                    break;
-                
-                case State.Crouch:
-                    Crouch();
-                    break;
-                
-                case State.ReadyToFight:
-                    break;
-                
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            stateMachine.currentState.Tick();
+            // switch (_currentState)
+            // {
+            //     case State.None:
+            //         break;
+            //     
+            //     case State.Idle:
+            //         Stopper();
+            //         break;
+            //     
+            //     case State.Move:
+            //         break;
+            //     
+            //     case State.Sprint:
+            //         break;
+            //     
+            //     case State.Dance:
+            //         Dance();
+            //         break;
+            //     
+            //     case State.Jump:
+            //         Stopper();
+            //         break;
+            //     
+            //     case State.Crouch:
+            //         Crouch();
+            //         break;
+            //     
+            //     case State.ReadyToFight:
+            //         break;
+            //     
+            //     default:
+            //         throw new ArgumentOutOfRangeException();
+            // }
             
-            Debug.LogError("_currentState is " + _currentState);
+            // Debug.LogError("_currentState is " + _currentState);
             
-            _hasAnimator = TryGetComponent(out _animator);
+            _hasAnimator = TryGetComponent(out animator);
 
             // FightSystem();
             GroundedCheck();
-            Move();
+            // Move();
             // Dance();
-            // JumpAndGravity();
-            
-            if (_input.dance && _currentState == State.Idle)
+            JumpAndGravity();
+            if (input.dance && !animator.GetBool(_animIDJump))
             {
-                _currentState = State.Dance;
+                stateMachine.ChangeState(new DanceState(this));
             }
+            if (input.move != Vector2.zero)
+            {
+                // if (input.crouch)
+                // {
+                //     Debug.Log("Кродёться");
+                // }
+                // else
+                // {
+                    Debug.Log("Идёт");
+                    stateMachine.ChangeState(new MoveState(this));
+                // }
+            } 
+            
+            Debug.Log(stateMachine.currentState);
+            
+            // if (input.jump)
+            // {                
+            //     _currentState = State.Jump;
+            // }
 
-            if (_input.jump)
-            {                
-                _currentState = State.Jump;
-            }
+            // if (input.sprint)
+            // {
+            //     _currentState = State.Sprint;
+            // }
 
         }
 
-        private void Stopper()
-        {
-            _animator.SetBool(_animIDCrouch, false);
-            _animator.SetBool(_animIDDance, false);
-        }
+        // private void Stopper()
+        // {
+        //     animator.SetBool(_animIDCrouch, false);
+        //     animator.SetBool(_animIDDance, false);
+        // }
 
         private void FixedUpdate()
         {
-            if (_input.crouch)
-            {
-                _currentState = State.Crouch;
-            }
+            // if (input.crouch)
+            // {
+            //     _currentState = State.Crouch;
+            // }
+            Crouch();
 
         }
 
@@ -313,20 +340,20 @@ namespace StarterAssets
             // update animator if using character
             if (_hasAnimator)
             {
-                _animator.SetBool(_animIDGrounded, Grounded);
+                animator.SetBool(_animIDGrounded, Grounded);
             }
         }
 
         private void CameraRotation()
         {
             // if there is an input and camera position is not fixed
-            if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
+            if (input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
                 //Don't multiply mouse input by Time.deltaTime;
                 float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
 
-                _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier * sensitivity;
-                _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier * sensitivity;
+                _cinemachineTargetYaw += input.look.x * deltaTimeMultiplier * sensitivity;
+                _cinemachineTargetPitch += input.look.y * deltaTimeMultiplier * sensitivity;
             }
 
             // clamp our rotations so our values are limited 360 degrees
@@ -338,109 +365,109 @@ namespace StarterAssets
                 _cinemachineTargetYaw, 0.0f);
         }
 
-        private void Move()
-        {
-            // set target speed based on move speed, sprint speed and if sprint is pressed
-            // targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
-            // проверяем, нажата ли кнопка для бега
-            if (_input.crouch)
-            {
-                targetSpeed = CrouchSpeed;
-            }
-            else if (_input.sprint && !_input.isAim)
-            {
-                targetSpeed = SprintSpeed;
-            }
-            else
-            {
-                targetSpeed = MoveSpeed;
-            }
-            // a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
-
-            // note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-            // if there is no input, set the target speed to 0
-            if (_input.move == Vector2.zero) targetSpeed = 0.0f;
-            
-            
-
-            // a reference to the players current horizontal velocity
-            float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
-
-            float speedOffset = 0.1f;
-            float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
-
-            // accelerate or decelerate to target speed
-            if (currentHorizontalSpeed < targetSpeed - speedOffset ||
-                currentHorizontalSpeed > targetSpeed + speedOffset)
-            {
-                // creates curved result rather than a linear one giving a more organic speed change
-                // note T in Lerp is clamped, so we don't need to clamp our speed
-                _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude,
-                    Time.deltaTime * SpeedChangeRate);
-
-                // round speed to 3 decimal places
-                _speed = Mathf.Round(_speed * 1000f) / 1000f;
-            }
-            else
-            {
-                _speed = targetSpeed;
-            }
-
-            _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
-            if (_animationBlend < 0.01f) _animationBlend = 0f;
-
-            // normalise input direction
-            Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
-
-            // note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-            // if there is a move input rotate player when the player is moving
-            if (_input.move != Vector2.zero)
-            {
-                _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
-                                  _mainCamera.transform.eulerAngles.y;
-                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
-                    RotationSmoothTime);
-            
-                // rotate to face input direction relative to camera position
-                transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
-            }
-
-            _currentVelocity.x = Mathf.Lerp(_currentVelocity.x, _input.move.x * targetSpeed, AnimationBlenderSpeed * Time.fixedDeltaTime);
-            _currentVelocity.y = Mathf.Lerp(_currentVelocity.y, _input.move.y * targetSpeed, AnimationBlenderSpeed * Time.fixedDeltaTime);
-
-            Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
-
-            // move the player
-            _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
-                             new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
-
-            // update animator if using character
-            if (_hasAnimator)
-            {
-                _animator.SetFloat(_animIDSpeed, _animationBlend);
-                _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
-                // Debug.Log("x: " + _currentVelocity.x);
-                _animator.SetFloat(_xVelHash, _currentVelocity.x);
-                _animator.SetFloat(_yVelHash, _currentVelocity.y);
-                
-            }
-        }
+        // private void Move()
+        // {
+        //     // set target speed based on move speed, sprint speed and if sprint is pressed
+        //     // targetSpeed = input.sprint ? SprintSpeed : MoveSpeed;
+        //     // проверяем, нажата ли кнопка для бега
+        //     if (input.crouch)
+        //     {
+        //         targetSpeed = CrouchSpeed;
+        //     }
+        //     else if (input.sprint && !input.isAim)
+        //     {
+        //         targetSpeed = SprintSpeed;
+        //     }
+        //     else
+        //     {
+        //         targetSpeed = MoveSpeed;
+        //     }
+        //     // a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
+        //
+        //     // note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
+        //     // if there is no input, set the target speed to 0
+        //     if (input.move == Vector2.zero) targetSpeed = 0.0f;
+        //     
+        //     
+        //
+        //     // a reference to the players current horizontal velocity
+        //     float currentHorizontalSpeed = new Vector3(controller.velocity.x, 0.0f, controller.velocity.z).magnitude;
+        //
+        //     float speedOffset = 0.1f;
+        //     float inputMagnitude = input.analogMovement ? input.move.magnitude : 1f;
+        //
+        //     // accelerate or decelerate to target speed
+        //     if (currentHorizontalSpeed < targetSpeed - speedOffset ||
+        //         currentHorizontalSpeed > targetSpeed + speedOffset)
+        //     {
+        //         // creates curved result rather than a linear one giving a more organic speed change
+        //         // note T in Lerp is clamped, so we don't need to clamp our speed
+        //         _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude,
+        //             Time.deltaTime * SpeedChangeRate);
+        //
+        //         // round speed to 3 decimal places
+        //         _speed = Mathf.Round(_speed * 1000f) / 1000f;
+        //     }
+        //     else
+        //     {
+        //         _speed = targetSpeed;
+        //     }
+        //
+        //     _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
+        //     if (_animationBlend < 0.01f) _animationBlend = 0f;
+        //
+        //     // normalise input direction
+        //     Vector3 inputDirection = new Vector3(input.move.x, 0.0f, input.move.y).normalized;
+        //
+        //     // note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
+        //     // if there is a move input rotate player when the player is moving
+        //     if (input.move != Vector2.zero)
+        //     {
+        //         _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
+        //                           mainCamera.transform.eulerAngles.y;
+        //         float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
+        //             RotationSmoothTime);
+        //     
+        //         // rotate to face input direction relative to camera position
+        //         transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
+        //     }
+        //
+        //     _currentVelocity.x = Mathf.Lerp(_currentVelocity.x, input.move.x * targetSpeed, AnimationBlenderSpeed * Time.fixedDeltaTime);
+        //     _currentVelocity.y = Mathf.Lerp(_currentVelocity.y, input.move.y * targetSpeed, AnimationBlenderSpeed * Time.fixedDeltaTime);
+        //
+        //     Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
+        //
+        //     // move the player
+        //     controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
+        //                      new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+        //
+        //     // update animator if using character
+        //     if (_hasAnimator)
+        //     {
+        //         animator.SetFloat(_animIDSpeed, _animationBlend);
+        //         animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
+        //         // Debug.Log("x: " + _currentVelocity.x);
+        //         animator.SetFloat(_xVelHash, _currentVelocity.x);
+        //         animator.SetFloat(_yVelHash, _currentVelocity.y);
+        //         
+        //     }
+        // }
 
         private void Crouch()
         {
-            if (_input.crouch)
+            if (input.crouch)
             {
-                _animator.SetBool(_animIDCrouch, true);
+                animator.SetBool(_animIDCrouch, true);
             }
-            else if (_input.sprint)
+            else if (input.sprint)
             {
-                _animator.SetBool(_animIDCrouch, false);
-                _currentState = State.Move;
+                animator.SetBool(_animIDCrouch, false);
+                // _currentState = State.Move;
             }
             else
             {
-                _animator.SetBool(_animIDCrouch, false);
-                _currentState = State.Idle;
+                animator.SetBool(_animIDCrouch, false);
+                // _currentState = State.Idle;
             }
 
         }
@@ -451,13 +478,13 @@ namespace StarterAssets
             {
                 // reset the fall timeout timer
                 _fallTimeoutDelta = FallTimeout;
-                Stopper();
+                // Stopper();
 
                 // update animator if using character
                 if (_hasAnimator)
                 {
-                    _animator.SetBool(_animIDJump, false);
-                    _animator.SetBool(_animIDFreeFall, false);
+                    animator.SetBool(_animIDJump, false);
+                    animator.SetBool(_animIDFreeFall, false);
                 }
 
                 // stop our velocity dropping infinitely when grounded
@@ -467,7 +494,7 @@ namespace StarterAssets
                 }
 
                 // Jump
-                if (_input.jump && _jumpTimeoutDelta <= 0.0f)
+                if (input.jump && _jumpTimeoutDelta <= 0.0f)
                 {
                     // the square root of H * -2 * G = how much velocity needed to reach desired height
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
@@ -475,7 +502,7 @@ namespace StarterAssets
                     // update animator if using character
                     if (_hasAnimator)
                     {
-                        _animator.SetBool(_animIDJump, true);
+                        animator.SetBool(_animIDJump, true);
                     }
                 }
 
@@ -484,10 +511,10 @@ namespace StarterAssets
                 {
                     _jumpTimeoutDelta -= Time.deltaTime;
                 }
-                else
-                {
-                    _currentState = State.Idle;
-                }
+                // else
+                // {
+                //     _currentState = State.Idle;
+                // }
             }
             else
             {
@@ -504,12 +531,12 @@ namespace StarterAssets
                     // update animator if using character
                     if (_hasAnimator)
                     {
-                        _animator.SetBool(_animIDFreeFall, true);
+                        animator.SetBool(_animIDFreeFall, true);
                     }
                 }
 
                 // if we are not grounded, do not jump
-                _input.jump = false;
+                input.jump = false;
             }
 
             // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
@@ -547,7 +574,7 @@ namespace StarterAssets
                 if (FootstepAudioClips.Length > 0)
                 {
                     var index = Random.Range(0, FootstepAudioClips.Length);
-                    AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
+                    AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(controller.center), FootstepAudioVolume);
                 }
             }
         }
@@ -556,27 +583,27 @@ namespace StarterAssets
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f)
             {
-                AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
+                AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(controller.center), FootstepAudioVolume);
             }
         }
 
-        private void Dance()
-        {
-            if (_input.dance)
-            {
-                if (_animator.GetBool(_animIDDance))
-                {
-                    _animator.SetBool(_animIDDance, false);
-                    _currentState = State.Idle;
-                }
-                else
-                {
-                    _animator.SetBool(_animIDDance, true);
-                }
-
-                _input.dance = false;
-            }
-        }
+        // private void Dance()
+        // {
+        //     if (input.dance)
+        //     {
+        //         if (animator.GetBool(_animIDDance))
+        //         {
+        //             animator.SetBool(_animIDDance, false);
+        //             // _currentState = State.Idle;
+        //         }
+        //         else
+        //         {
+        //             animator.SetBool(_animIDDance, true);
+        //         }
+        //
+        //         input.dance = false;
+        //     }
+        // }
     }
 
         // public void SetSensitivity(float newSensitivity)
@@ -607,15 +634,15 @@ namespace StarterAssets
             //     // hitTransform = raycastHit.transform;
             // }
             //
-            // if (_input.isAim)
+            // if (input.isAim)
             // {
             //     _aimCam.gameObject.SetActive(true);
             //     SetSensitivity(aimSensitivity);
             //     SetRotateOnMove(false);
-            //     _animator.SetBool(_animIDAim, true);
+            //     animator.SetBool(_animIDAim, true);
             //     aimDot.SetActive(true);
             //     
-            //     _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
+            //     animator.SetLayerWeight(1, Mathf.Lerp(animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
             //     
             //     Vector3 worldAimTarget = mouseWorldPosition;
             //     worldAimTarget.y = transform.position.y;
@@ -629,24 +656,24 @@ namespace StarterAssets
             //     _aimCam.gameObject.SetActive(false);
             //     SetSensitivity(normalSensitivity);
             //     SetRotateOnMove(true);
-            //     _animator.SetBool(_animIDAim, false);
+            //     animator.SetBool(_animIDAim, false);
             //     aimDot.SetActive(false);
             //
-            //     // _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
+            //     // animator.SetLayerWeight(1, Mathf.Lerp(animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
             // }
             //
-            // if (_input.isFire && !_input.isAim)
+            // if (input.isFire && !input.isAim)
             // {
-            //     _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
+            //     animator.SetLayerWeight(1, Mathf.Lerp(animator.GetLayerWeight(1), 1f, Time.deltaTime * 13f));
             //
-            //     if (!_animator.GetBool(_animIDAttackingNow))
+            //     if (!animator.GetBool(_animIDAttackingNow))
             //     {
-            //         _animator.SetTrigger("Attack trigger");
+            //         animator.SetTrigger("Attack trigger");
             //         Debug.Log("Боньк");
             //     }
             //     
             //     
-            //     AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(1);
+            //     AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(1);
             //     // StartCoroutine(FitnessCoroutine(stateInfo.length));
             // }
             // else
@@ -658,7 +685,7 @@ namespace StarterAssets
         // private IEnumerator FitnessCoroutine(float delay)
         // {
         //     yield return new WaitForSeconds(delay);
-        //     _animator.SetLayerWeight(1, Mathf.Lerp(_animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
+        //     animator.SetLayerWeight(1, Mathf.Lerp(animator.GetLayerWeight(1), 0f, Time.deltaTime * 13f));
         //     // Debug.Log("Вот и всё, ребята");
         // }
     }
